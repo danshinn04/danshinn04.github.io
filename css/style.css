@@ -1,0 +1,28 @@
+/* General page styling */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #a8ea7f;
+  }
+  
+  /* Header styling */
+  header {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  /* Form and results container */
+  #search-form {
+    margin: 2rem auto;
+    text-align: center;
+  }
+  
+  #results {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+  
