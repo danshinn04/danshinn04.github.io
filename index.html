@@ -5,18 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stock Ratio Tracker</title>
   <link rel="stylesheet" href="css/style.css" />
+  <!-- Include Chart.js from a CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <header>
     <h1>Stock Ratio Tracker</h1>
   </header>
   <main>
-    <!-- Main search form for stock symbols 
+    <!-- Main search form for stock symbols -->
     <form id="search-form">
       <input type="text" id="stock-input" placeholder="Enter stock symbols (e.g., TQQQ,AAPL,BTC)" required />
       <button type="submit">Search Stocks</button>
     </form>
-    -->
 
     <!-- Form to add a custom filter -->
     <section id="filter-section">
@@ -48,12 +49,29 @@
       </div>
     </section>
 
+    <!-- Timeline selection -->
+    <section id="timeline-section">
+      <h2>Select Timeline for Chart</h2>
+      <label for="start-date">Start Date:</label>
+      <input type="date" id="start-date" />
+      <label for="end-date">End Date:</label>
+      <input type="date" id="end-date" />
+    </section>
+
     <!-- Results section -->
     <section id="results"></section>
+
+    <!-- Chart container -->
+    <section id="chart-section" style="display:none;">
+      <h2>Historical Chart</h2>
+      <canvas id="stock-chart"></canvas>
+      <button id="close-chart-btn">Close Chart</button>
+    </section>
   </main>
-  <!-- Scripts: load utilities first, then API functions, then main app logic -->
+  <!-- Scripts: load utilities first, then API functions, then charting, then main app logic -->
   <script src="js/utils.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/graph.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

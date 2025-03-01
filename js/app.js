@@ -1,31 +1,22 @@
 // js/app.js
 
-// Defined an array to hold user-defined custom filters
+// Array to hold user-defined custom filters
 let activeFilters = [];
 
-// Listen for DOM load
 document.addEventListener('DOMContentLoaded', () => {
-  // Handle adding custom filters
-  const addFilterBtn = document.getElementById('add-filter-btn');
-  addFilterBtn.addEventListener('click', addCustomFilter);
+  // Add custom filter event
+  document.getElementById('add-filter-btn').addEventListener('click', addCustomFilter);
 
-  // Handle the main search form submission
-  const searchForm = document.getElementById('search-form');
-  searchForm.addEventListener('submit', async (event) => {
+  // Main search form submission: fetch live stock data and apply filters
+  document.getElementById('search-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    
-    // Get comma-separated stock symbols
     const stockInput = document.getElementById('stock-input').value.trim();
     if (!stockInput) return;
-
     showLoading();
 
     try {
-      // Fetch data for the entered symbols
       const stockDataArray = await fetchStockData(stockInput);
       hideLoading();
-
-      // Filter stocks based on active custom filters
       const alphaCandidates = filterAlphaCandidates(stockDataArray, activeFilters);
       displayStocksData(alphaCandidates);
     } catch (error) {
@@ -33,13 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
       displayError(error);
     }
   });
+
+  // Close chart view
+  document.getElementById('close-chart-btn').addEventListener('click', () => {
+    document.getElementById('chart-section').style.display = 'none';
+  });
 });
 
 /**
  * Adds a custom filter based on user input and displays it.
  */
 function addCustomFilter() {
-  // Get values from the filter form
   const symbol = document.getElementById('filter-symbol').value.trim().toUpperCase();
   const attribute = document.getElementById('filter-attribute').value;
   const operator = document.getElementById('filter-operator').value;
@@ -50,12 +45,9 @@ function addCustomFilter() {
     return;
   }
 
-  // Create a filter object
   const filter = { symbol, attribute, operator, threshold };
   activeFilters.push(filter);
   renderActiveFilters();
-
-  // Optionally, clear the form fields after adding
   document.getElementById('filter-form').reset();
 }
 
@@ -95,18 +87,12 @@ function removeFilter(index) {
  * @returns {Array} - Filtered stock data objects.
  */
 function filterAlphaCandidates(stocks, filters) {
-  // If no filters are active, return all stocks
   if (filters.length === 0) return stocks;
-
   return stocks.filter(stock => {
-    // For each filter, if the stock's symbol matches the filter's symbol,
-    // then check the condition using the chosen attribute.
     for (let filter of filters) {
       if (stock.symbol.toUpperCase() === filter.symbol) {
         const value = stock[filter.attribute];
-        if (value == null) continue; // Skip if no data for this attribute
-
-        // Apply the operator comparison
+        if (value == null) continue;
         if (filter.operator === '<' && value < filter.threshold) return true;
         if (filter.operator === '>' && value > filter.threshold) return true;
       }
@@ -116,7 +102,54 @@ function filterAlphaCandidates(stocks, filters) {
 }
 
 /**
- * Displays a simple loading message.
+ * Displays stock data in the results section along with a "View Chart" button.
+ * @param {Array} stocks - Array of filtered stock data objects.
+ */
+function displayStocksData(stocks) {
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
+  if (stocks.length === 0) {
+    resultsDiv.innerHTML = '<p>No alpha candidates found.</p>';
+    return;
+  }
+  stocks.forEach(stock => {
+    const stockInfo = document.createElement('div');
+    stockInfo.classList.add('stock-info');
+    stockInfo.innerHTML = `
+      <h2>${stock.symbol}</h2>
+      <p>Price: $${formatNumber(stock.regularMarketPrice)}</p>
+      <p>P/E Ratio: ${stock.trailingPE ? stock.trailingPE : 'N/A'}</p>
+      <button class="view-chart-btn" data-symbol="${stock.symbol}">View Chart</button>
+    `;
+    resultsDiv.appendChild(stockInfo);
+  });
+
+  // Add event listeners for the newly added "View Chart" buttons
+  document.querySelectorAll('.view-chart-btn').forEach(btn => {
+    btn.addEventListener('click', async (event) => {
+      const symbol = event.target.getAttribute('data-symbol');
+      // Get timeline values from date inputs (if not provided, use defaults)
+      const startDate = document.getElementById('start-date').value || '2020-01-01';
+      const endDate = document.getElementById('end-date').value || new Date().toISOString().split('T')[0];
+
+      try {
+        showChartLoading();
+        // Fetch historical data for the selected symbol
+        const historicalData = await fetchHistoricalData(symbol, startDate, endDate);
+        // Render the chart using the graph module, passing any filters for that symbol
+        renderStockChart(symbol, historicalData, activeFilters);
+        hideChartLoading();
+        document.getElementById('chart-section').style.display = 'block';
+      } catch (error) {
+        hideChartLoading();
+        alert('Error loading chart: ' + error.message);
+      }
+    });
+  });
+}
+
+/**
+ * Displays a loading message in the results section.
  */
 function showLoading() {
   const resultsDiv = document.getElementById('results');
@@ -127,38 +160,26 @@ function showLoading() {
  * Hides the loading indicator.
  */
 function hideLoading() {
-  // In this simple example, no extra actions are needed.
+  // For this example, nothing additional is needed.
 }
 
 /**
- * Displays stock data elements on the page.
- * @param {Array} stocks - Array of stock data objects.
+ * Displays a loading message for the chart.
  */
-function displayStocksData(stocks) {
-  const resultsDiv = document.getElementById('results');
-  resultsDiv.innerHTML = ''; // Clear previous results
-
-  if (stocks.length === 0) {
-    resultsDiv.innerHTML = '<p>No alpha candidates found.</p>';
-    return;
-  }
-
-  stocks.forEach(stock => {
-    const stockInfo = document.createElement('div');
-    stockInfo.classList.add('stock-info');
-
-    stockInfo.innerHTML = `
-      <h2>${stock.symbol}</h2>
-      <p>Price: $${formatNumber(stock.regularMarketPrice)}</p>
-      <p>P/E Ratio: ${stock.trailingPE ? stock.trailingPE : 'N/A'}</p>
-    `;
-
-    resultsDiv.appendChild(stockInfo);
-  });
+function showChartLoading() {
+  const chartSection = document.getElementById('chart-section');
+  chartSection.innerHTML = '<p>Loading chart...</p>';
 }
 
 /**
- * Displays an error message on the page.
+ * Hides the chart loading indicator.
+ */
+function hideChartLoading() {
+  // Nothing extra needed if the chart renders properly.
+}
+
+/**
+ * Displays an error message in the results section.
  * @param {Error} error - The error object.
  */
 function displayError(error) {
